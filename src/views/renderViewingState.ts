@@ -7,7 +7,7 @@ export function renderViewingState(state: ComponentState, dispatch: ((msg: Compo
     let iframe = viewingElement.querySelector("iframe") as HTMLIFrameElement;
     iframe.style.height = "100vh";
     iframe.style.width = "100vw";
-    iframe.src = `${state.pokerNowUrl}`;
+    iframe.src = `https://www.pokernow.club/games/${state.gameRoomId}?ut=${state.currentClient.clientUuid}`;
 
     return viewingElement;
 }

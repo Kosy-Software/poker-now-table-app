@@ -10,7 +10,7 @@ export function render(state: ComponentState, dispatch: Dispatch): void {
     let renderView: RenderView;
     let rootNode = document.getElementById("root");
 
-    if (state?.pokerNowUrl) {
+    if (state?.gameRoomId) {
         renderView = renderViewingState;
     } else {
         renderView = renderWaitingState;

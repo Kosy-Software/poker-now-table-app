@@ -6,17 +6,19 @@ import { render } from './views/renderState';
 import { isValidPokerNowUrl } from './lib/validation';
 import { ClientInfo } from '@kosy/kosy-app-api/types';
 import { KosyApi } from '@kosy/kosy-app-api';
+import axios from 'axios';
 
 module Kosy.Integration.Youtube {
     export class App {
-        private state: AppState = { pokerNowUrl: null };
+        private state: AppState = { gameRoomId: null };
         private initializer: ClientInfo;
         private currentClient: ClientInfo;
 
-        private kosyApi = new KosyApi<AppState, AppMessage>({
+        private kosyApi = new KosyApi<AppState, AppMessage, AppMessage>({
             onClientHasJoined: (client) => this.onClientHasJoined(client),
             onClientHasLeft: (clientUuid) => this.onClientHasLeft(clientUuid),
-            onReceiveMessage: (message) => this.processMessage(message),
+            onReceiveMessageAsClient: (message) => this.processMessage(message),
+            onReceiveMessageAsHost: (message) => message,
             onRequestState: () => this.getState(),
             onProvideState: (newState: AppState) => this.setState(newState)
         })
@@ -28,7 +30,7 @@ module Kosy.Integration.Youtube {
             this.state = initialInfo.currentAppState ?? this.state;
             this.renderComponent();
 
-            if (this.state.pokerNowUrl == null && this.initializer.clientUuid == this.currentClient.clientUuid) {
+            if (this.state.gameRoomId == null && this.initializer.clientUuid == this.currentClient.clientUuid) {
                 this.generatePokerUrl();
             }
 
@@ -37,7 +39,21 @@ module Kosy.Integration.Youtube {
             });
         }
 
-        private async generatePokerUrl() {
+        private generatePokerUrl() {
+            axios
+                .get('http://localhost:8001/create-room')
+                .then(res => {
+                    if (res.data) {
+                        this.state.gameRoomId = res.data.gameID;
+                        console.log(res.data.gameID);
+                        this.renderComponent();
+                    } else {
+                        console.error("Server was not able to create a game room id");
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                })
         }
 
         public setState(newState: AppState) {
@@ -54,7 +70,7 @@ module Kosy.Integration.Youtube {
         }
 
         public onClientHasLeft(clientUuid: string) {
-            if (clientUuid === this.initializer.clientUuid && !this.state.pokerNowUrl) {
+            if (clientUuid === this.initializer.clientUuid && !this.state.gameRoomId) {
                 this.kosyApi.stopApp();
             }
         }
@@ -63,7 +79,7 @@ module Kosy.Integration.Youtube {
             switch (message.type) {
                 case "receive-poker-url":
                     if (isValidPokerNowUrl(message.payload)) {
-                        this.state.pokerNowUrl = `${message.payload}`;
+                        this.state.gameRoomId = `${message.payload}`;
                         this.renderComponent();
                     }
                     break;
@@ -84,7 +100,7 @@ module Kosy.Integration.Youtube {
         //Poor man's react, so we don't need to fetch the entire react library for this tiny app...
         private renderComponent() {
             render({
-                pokerNowUrl: this.state.pokerNowUrl,
+                gameRoomId: this.state.gameRoomId,
                 currentClient: this.currentClient,
                 initializer: this.initializer,
             }, (message) => this.processComponentMessage(message));
