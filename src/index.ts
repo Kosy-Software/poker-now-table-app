@@ -15,6 +15,7 @@ module Kosy.Integration.Youtube {
         private currentClient: ClientInfo;
 
         private kosyApi = new KosyApi<AppState, AppMessage, AppMessage>({
+            onClientHasJoined: (clientInfo) => this.onClientHasJoined(clientInfo),
             onClientHasLeft: (clientUuid) => this.onClientHasLeft(clientUuid),
             onReceiveMessageAsClient: (message) => this.processMessage(message),
             onReceiveMessageAsHost: (message) => message,
@@ -40,7 +41,7 @@ module Kosy.Integration.Youtube {
 
         private generatePokerUrl() {
             axios
-                .get('http://localhost:8001/create-room')
+                .get('https://51e92853d1f4.ngrok.io/create-room')
                 .then(res => {
                     if (res.data) {
                         this.state.gameRoomId = res.data.gameID;
@@ -62,6 +63,10 @@ module Kosy.Integration.Youtube {
 
         public getState() {
             return this.state;
+        }
+
+        public onClientHasJoined(clientInfo: ClientInfo) {
+
         }
 
         public onClientHasLeft(clientUuid: string) {
